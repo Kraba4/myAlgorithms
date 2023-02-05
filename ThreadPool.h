@@ -40,62 +40,17 @@ namespace my {
                 }
             }
         };
-        ThreadPool(){
-            initializeThreads(std::thread::hardware_concurrency());
-        }
-        ThreadPool(size_t numberOfThreads){
-            initializeThreads(numberOfThreads);
-        }
+        ThreadPool();
+        ThreadPool(size_t numberOfThreads);
+        ~ThreadPool();
 
-        size_t getNumberOfThreads(){
-            return threads_.size();
-        }
-        void doAsync(Task& task){
-            std::lock_guard guard(mutex_);
-            tasks_.push_back(&task);
-            //tasks_[last_++] = &task;
-            //std::cout << last_ << "= last\n";
-        }
-        void stop(){
-            isRunning_ = false;
-        }
-        ~ThreadPool(){
-            isRunning_ = false;
-//            std::cout << "bye";
-            for(auto& t : threads_){
-                t.join();
-            }
-        }
+        size_t getNumberOfThreads();
+        void doAsync(Task& task);
+        void stop();
+
     private:
-        void initializeThreads(size_t numberOfThreads){
-            threads_.reserve(numberOfThreads);
-            isRunning_ = true;
-            for(int i=0; i<numberOfThreads; ++i){
-                threads_.emplace_back([this](){
-                    this->work();
-                });
-            }
-        };
-
-        void work(){
-            while(isRunning_) {
-                std::unique_lock guard(mutex_);
-                if(!tasks_.empty()) {
-
-                    auto task = tasks_.front();
-                    tasks_.pop_front();
-                   // std::cout << "here " << tasks_.size() << std::endl;
-                    guard.unlock();
-
-                    task->mutex_.lock();
-                    task->result = task->func();
-                    task->hasResult = true;
-                    task->hasResult.notify_one();
-                    task->mutex_.unlock();
-                   // std::cout << "here2 " << tasks_.size() << std::endl;
-                }
-            }
-        }
+        void initializeThreads(size_t numberOfThreads);
+        void work();
 
         bool isRunning_;
         std::vector<std::thread> threads_;
