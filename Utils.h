@@ -18,7 +18,7 @@ namespace utils {
     };
     void testFindAndPrint(std::function<
         std::vector<unsigned>::iterator(std::vector<unsigned>::iterator,std::vector<unsigned>::iterator, unsigned )> find,
-        std::initializer_list<FindTest> tests, unsigned seed = 1, unsigned numberOfRuns = 50, unsigned range = 2'000'000);
+        std::initializer_list<FindTest> tests, unsigned seed = 1, unsigned numberOfRuns = 1, unsigned range = 5'000'000'000);
 
     std::vector<unsigned int> create_random_vector(size_t size, unsigned int range, unsigned int seed);
 
@@ -31,6 +31,7 @@ namespace utils {
             fn();
             auto end = std::chrono::high_resolution_clock::now();
             results.push_back((end - start).count());
+//            std::cout << results.back() << std::endl;
         }
         return std::reduce(results.begin(), results.end()) / results.size();
     }

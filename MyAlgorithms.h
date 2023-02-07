@@ -10,30 +10,34 @@
 namespace my {
     template<std::random_access_iterator Iterator>
     Iterator find(my::ThreadPool& pool, Iterator first, Iterator last, const std::iter_value_t<Iterator>& value){
-        std::vector<my::ThreadPool::Task> tasks;
-        tasks.reserve(pool.getNumberOfThreads());
-        int chunkSize = (last - first) / pool.getNumberOfThreads();
+        const int chunks = 4;
+        int chunkSize = (last - first) / chunks;
+        std::vector<std::future<decltype(first)>> results;
 
-        for(int i=0;i<pool.getNumberOfThreads(); ++i){
-            tasks.emplace_back([first, i, last, value, chunkSize](){
-                Iterator right =  std::min(first +(i+1)*chunkSize, last);
-                Iterator result = std::find(first + i*chunkSize, right, value);
-                if(result == right) return last;
+        for(int i=0;i<chunks; ++i){
+            results.push_back(pool.doAsync([first, i, last, value, chunkSize]() {
+                Iterator right = std::min(first + (i + 1) * chunkSize, last);
+                Iterator result = std::find(first + i * chunkSize, right, value);
+                if (result == right) return last;
                 return result;
-            });
-
-        }
-//        for(auto& task : tasks){
-//            pool.doAsync(task);
-//        }
-        for(auto& task : tasks){
-            task.wait();
+            }));
         }
         Iterator minI = last;
-        for(auto& task : tasks){
-            minI = std::min(minI, any_cast<Iterator>(task.result));
+        for(int i=0; i<results.size(); ++i){
+            results[i].wait();
+            minI = results[i].get();
+            if(minI != last){
+                pool.clear();
+//                std::cout << "out\n";
+                return minI;
+            }
+
         }
-        return minI;
+//        for(auto& result : results){
+//            minI = std::min(minI, result.get());
+//        }
+//        return minI;
+        return last;
     }
 }
 

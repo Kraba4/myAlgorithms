@@ -31,7 +31,12 @@ public:
         queue.pop();
         return std::move(elem);
     }
-
+    void clear(){
+        std::lock_guard lock(mutex_);
+        for(int i=0;i<queue.size();++i){
+            queue.pop();
+        }
+    }
 private:
     std::queue<ItemType> queue;
     std::mutex mutex_;

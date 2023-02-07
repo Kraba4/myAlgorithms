@@ -15,10 +15,6 @@ namespace my {
     size_t ThreadPool::getNumberOfThreads(){
         return threads_.size();
     }
-    void ThreadPool::doAsyncOld(Task& task){
-        std::lock_guard guard(old_mutex_);
-        old_tasks_.push(&task);
-    }
     void ThreadPool::stop(){
         isRunning_.store(false);
         hasWork_.store(true);
@@ -46,26 +42,10 @@ namespace my {
         while(isRunning_) {
             auto task = tasks_.pop();
             if(task) {
-                task.value()();
+                std::invoke(task.value());
             }else{
                 hasWork_.store(false);
                 hasWork_.wait(false);
-            }
-        }
-    }
-    void ThreadPool::workOld(){
-        while(isRunning_) {
-            std::unique_lock guard(old_mutex_);
-            if(!old_tasks_.empty()) {
-                auto task = old_tasks_.front();
-                old_tasks_.pop();
-                guard.unlock();
-
-                task->mutex_.lock();
-                task->result = task->func();
-                task->hasResult = true;
-                task->hasResult.notify_one();
-                task->mutex_.unlock();
             }
         }
     }

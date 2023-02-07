@@ -23,34 +23,14 @@ namespace my {
     class ThreadPool {
 
     public:
-        struct Task{
-            explicit Task( std::function<std::any()>&& func) : func(func) {}
-            Task(const Task& another){
-                func = another.func;
-                hasResult.store(another.hasResult);
-                result = another.result;
-
-            }
-            std::function<std::any()> func;
-            std::atomic<bool> hasResult = false;
-            std::any result;
-            std::mutex mutex_;
-            void wait(){
-                while(true){
-                    std::unique_lock guard(mutex_);
-                    if(hasResult) break;
-                    hasResult.wait(true);
-                }
-            }
-        };
         ThreadPool();
         ThreadPool(size_t numberOfThreads);
         ~ThreadPool();
 
         size_t getNumberOfThreads();
-
-        void doAsyncOld(Task& task);
-
+        void clear(){
+            tasks_.clear();
+        }
         template<typename Function, typename ...Args>
         decltype(auto) doAsync(Function&& func, Args&&... args){
             using Result = std::invoke_result_t<Function, Args...>;
@@ -74,11 +54,8 @@ namespace my {
     private:
         void initializeThreads(size_t numberOfThreads);
         void work();
-        void workOld();
 
         std::vector<std::thread> threads_;
-        std::queue<Task*> old_tasks_;
-        std::mutex old_mutex_;
         BlockingQueue<std::function<void()>> tasks_;
         std::atomic<bool> isRunning_;
         std::atomic<bool> hasWork_;
