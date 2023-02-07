@@ -6,7 +6,7 @@
 #include <execution>
 
 #include "ThreadPool.h"
-#include "FindPool.h"
+#include "MyAlgorithms.h"
 #include "Utils.h"
 
 auto stdFindSeq = [](std::vector<unsigned>::iterator begin,
@@ -19,10 +19,11 @@ auto stdFindPar = [](std::vector<unsigned>::iterator begin,
 };
 
 int main(){
+    using namespace std::chrono_literals;
     const unsigned int SEED =  time(NULL);
 
-    utils::testFindAndPrint(stdFindSeq, {{5000, 200}, {500'000, 200}, {50'000'000}}, SEED);
-    utils::testFindAndPrint(stdFindPar, {{5000, 200}, {500'000, 200}, {50'000'000}}, SEED);
+   // utils::testFindAndPrint(stdFindSeq, {{5000, 200}, {500'000, 200}, {50'000'000}}, SEED);
+    //utils::testFindAndPrint(stdFindPar, {{5000, 200}, {500'000, 200}, {50'000'000}}, SEED);
 
 
     my::ThreadPool pool(4);
@@ -30,6 +31,28 @@ int main(){
                           std::vector<unsigned>::iterator end, unsigned val){
         return my::find(pool, begin, end, val);
     };
-    utils::testFindAndPrint(myFind, {{5000, 200}, {500'000, 200}, {50'000'000}}, SEED);
+   // utils::testFindAndPrint(myFind, {{5000, 200}, {500'000, 200}, {50'000'000}}, SEED);
 
+
+   auto h1 = pool.doAsync([](){std::cout << "hello from 1\n"; return 123;});
+   auto h2 = pool.doAsync([](){
+       std::this_thread::sleep_for(500ms);
+       std::cout << "hello from 2\n";
+   });
+   pool.doAsync([](){
+        std::cout << "hello from 3\n";
+    });
+    pool.doAsync([](){
+        std::cout << "hello from 4\n";
+    });
+    pool.doAsync([](){
+        std::cout << "hello from 5\n";
+    });
+    pool.doAsync([](){
+        std::cout << "hello from 6\n";
+    });
+   h1.wait();
+
+   std::cout << h1.get() << "\n";
+   h2.wait();
 }

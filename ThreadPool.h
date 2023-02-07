@@ -13,7 +13,10 @@
 #include <any>
 #include <mutex>
 #include <iostream>
+#include <future>
+#include <queue>
 #include "ModuleVector.h"
+#include "BlockingQueue.h"
 
 namespace my {
 
@@ -45,20 +48,40 @@ namespace my {
         ~ThreadPool();
 
         size_t getNumberOfThreads();
-        void doAsync(Task& task);
+
+        void doAsyncOld(Task& task);
+
+        template<typename Function, typename ...Args>
+        decltype(auto) doAsync(Function&& func, Args&&... args){
+            using Result = std::invoke_result_t<Function, Args...>;
+            std::function<Result()> task_function = std::bind(std::forward<Function>(func), std::forward<Args>(args)...);
+            std::shared_ptr<std::promise<Result>> task_result = std::make_shared<std::promise<Result>>();
+
+            tasks_.push([task_function, task_result]() {
+                if constexpr (std::is_void_v<Result>) {
+                    std::invoke(task_function);
+                    task_result->set_value();
+                }else {
+                    task_result->set_value(std::invoke(task_function));
+                }
+            });
+            hasWork_.store(true);
+            hasWork_.notify_one();
+            return task_result->get_future();
+        }
         void stop();
 
     private:
         void initializeThreads(size_t numberOfThreads);
         void work();
+        void workOld();
 
-        bool isRunning_;
         std::vector<std::thread> threads_;
-        //my::ModuleVector<Task*, 300> tasks_;
-        std::list<Task*> tasks_;
-        std::atomic<int> front_ = 0;
-        std::atomic<int> last_ = 0;
-        std::mutex mutex_;
+        std::queue<Task*> old_tasks_;
+        std::mutex old_mutex_;
+        BlockingQueue<std::function<void()>> tasks_;
+        std::atomic<bool> isRunning_;
+        std::atomic<bool> hasWork_;
 
     };
 

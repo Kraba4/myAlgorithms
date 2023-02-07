@@ -2,8 +2,8 @@
 // Created by HONOR on 05.02.2023.
 //
 
-#ifndef MYALGORITHMS_FINDPOOL_H
-#define MYALGORITHMS_FINDPOOL_H
+#ifndef MYALGORITHMS_MYALGORITHMS_H
+#define MYALGORITHMS_MYALGORITHMS_H
 
 #include "ThreadPool.h"
 
@@ -23,9 +23,9 @@ namespace my {
             });
 
         }
-        for(auto& task : tasks){
-            pool.doAsync(task);
-        }
+//        for(auto& task : tasks){
+//            pool.doAsync(task);
+//        }
         for(auto& task : tasks){
             task.wait();
         }
@@ -38,4 +38,4 @@ namespace my {
 }
 
 
-#endif //MYALGORITHMS_FINDPOOL_H
+#endif //MYALGORITHMS_MYALGORITHMS_H
