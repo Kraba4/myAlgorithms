@@ -1,8 +1,0 @@
-# ninja log v5
-38	603	6976519527984015	CMakeFiles/myAlgorithms.dir/ModuleVector.cpp.obj	d73b5fe60b9be2ab
-57	4323	6976519564996759	CMakeFiles/myAlgorithms.dir/Utils.cpp.obj	77957c0eb21b23d
-1	5270	6976519574447422	CMakeFiles/myAlgorithms.dir/ThreadPool.cpp.obj	3dbca8e156f12b30
-20	5855	6976519580267849	CMakeFiles/myAlgorithms.dir/main.cpp.obj	bed7eea5c62e3c68
-5855	6415	6976519585577892	myAlgorithms.exe	a1110cce27a31b75
-4	5421	6976521484138084	CMakeFiles/myAlgorithms.dir/main.cpp.obj	bed7eea5c62e3c68
-5422	5788	6976521486965519	myAlgorithms.exe	a1110cce27a31b75
