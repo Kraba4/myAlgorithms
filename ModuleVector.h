@@ -10,7 +10,7 @@ namespace my {
     template<typename ItemType, int Size>
     class ModuleVector {
     public:
-        ItemType &operator[](int index) {
+        ItemType& operator[](long long index) {
             return array[index % Size];
         }
 

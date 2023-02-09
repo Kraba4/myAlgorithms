@@ -8,7 +8,7 @@
 
 #include <queue>
 #include <mutex>
-
+#include <optional>
 template<typename ItemType>
 class BlockingQueue {
 public:
