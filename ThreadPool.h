@@ -46,20 +46,8 @@ namespace my {
                 lastTask_[i].store(lastTaskCached_[i]);
             }
         }
-        template<typename Function, typename ...Args>
-        decltype(auto) doAsync(Function func, Args... args){
-            using Result = std::invoke_result_t<Function, Args...>;
-            std::function<Result()> task_function = std::bind(std::forward<Function>(func), std::forward<Args>(args)...);
-            std::shared_ptr<std::promise<Result>> task_result = std::make_shared<std::promise<Result>>();
-
-            tasks_[nextThread_][lastTaskCached_[nextThread_].field] = [task_function, task_result]() {
-                if constexpr (std::is_void_v<Result>) {
-                    std::invoke(task_function);
-                    task_result->set_value();
-                }else {
-                    task_result->set_value(std::invoke(task_function));
-                }
-            };
+        void doAsync(std::function<void()> func){
+            tasks_[nextThread_][lastTaskCached_[nextThread_].field] = func;
             ++lastTaskCached_[nextThread_].field;
             if(curTask_[nextThread_].load().field == lastTask_[nextThread_].load().field) {
                 lastTask_[nextThread_].store(lastTaskCached_[nextThread_]);
@@ -67,10 +55,8 @@ namespace my {
 //            std::cout << nextThread_ << " " << lastTaskCached_[nextThread_]<< std::endl;
             ++nextThread_;
             nextThread_ = nextThread_ % 4;
-
 //            hasWork_.store(true);
 //            hasWork_.notify_one();
-            return task_result->get_future();
         }
         void stop();
 
@@ -86,7 +72,7 @@ namespace my {
 
         std::atomic<AlignedField<int, 64>> curTask_[4];
         alignas(64) std::atomic<AlignedField<int, 64>> lastTask_[4];
-        alignas(64) AlignedField<int, 64> lastTaskCached_[4];
+        alignas(64) AlignedField<int, 64> lastTaskCached_[4] = {0,0,0,0};
         alignas(64) std::atomic<AlignedField<bool, 64>> inProcess_[4];
         my::ModuleVector<std::function<void()>, 256> tasks_[4];
     };
