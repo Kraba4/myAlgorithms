@@ -31,15 +31,18 @@ namespace my {
 
         size_t getNumberOfThreads();
         void clear(){
+//            std::cout << "start clear\n";
+            pause_.store(true);
             for(int i=0;i<threads_.size();++i){
                 auto lastTaskLoad = lastTask_[i].load();
                 curTask_[i].store(lastTaskLoad);
                 lastTaskCached_[i] = lastTaskLoad;
             }
-            while(inProcess_[0].load().field || inProcess_[1].load().field ||
-                  inProcess_[2].load().field || inProcess_[3].load().field){
+            while(inProcess_[0].load() || inProcess_[1].load() ||
+                  inProcess_[2].load() || inProcess_[3].load()){
 //                std::cout << "wait\n";
             }
+//            std::cout << "clear done \n";
         }
         void flush(){
             for(int i=0;i<threads_.size();++i){
@@ -47,9 +50,13 @@ namespace my {
             }
         }
         void doAsync(std::function<void()> func){
-            tasks_[nextThread_][lastTaskCached_[nextThread_].field] = func;
-            ++lastTaskCached_[nextThread_].field;
-            if(curTask_[nextThread_].load().field == lastTask_[nextThread_].load().field) {
+            if(pause_.load()) {
+                pause_.store(false);
+//                std::cout << "begin\n";
+            }
+            tasks_[nextThread_][lastTaskCached_[nextThread_]] = std::move(func);
+            ++lastTaskCached_[nextThread_];
+            if(curTask_[nextThread_].load() == lastTask_[nextThread_].load()) {
                 lastTask_[nextThread_].store(lastTaskCached_[nextThread_]);
             }
 //            std::cout << nextThread_ << " " << lastTaskCached_[nextThread_]<< std::endl;
@@ -69,12 +76,12 @@ namespace my {
         std::atomic<bool> isRunning_;
         std::atomic<bool> hasWork_;
         int nextThread_ = 0;
-
-        std::atomic<AlignedField<int, 64>> curTask_[4];
-        alignas(64) std::atomic<AlignedField<int, 64>> lastTask_[4];
-        alignas(64) AlignedField<int, 64> lastTaskCached_[4] = {0,0,0,0};
-        alignas(64) std::atomic<AlignedField<bool, 64>> inProcess_[4];
-        my::ModuleVector<std::function<void()>, 256> tasks_[4];
+        std::atomic<bool> pause_ = false;
+        std::atomic<int> curTask_[4];
+        alignas(64) std::atomic<int> lastTask_[4];
+        alignas(64) int lastTaskCached_[4] = {0,0,0,0};
+        alignas(64) std::atomic<int> inProcess_[4];
+        my::ModuleVector<std::function<void()>, 512> tasks_[4];
     };
 
 } // my

@@ -40,23 +40,23 @@ namespace my {
 
     void ThreadPool::work(int id){
         while(isRunning_) {
-            int lastTask = lastTask_[id].load().field;
-            auto curTask = curTask_[id].load();
-            if(curTask.field>lastTask-2){
-                curTask_[id].store(curTask);
-            }
-            if(curTask.field != lastTask){
-                inProcess_[id].store({true});
-                auto task = tasks_[id][curTask.field];
-                curTask_[id].store({curTask.field + 1});
-                std::invoke(task);
-                inProcess_[id].store({false});
-                //std::cout << "do " << curTask.field << std::endl;
-            }else{
+            if(!pause_.load()) {
+                int lastTask = lastTask_[id].load();
+                auto curTask = curTask_[id].load();
+
+                if (curTask != lastTask) {
+                    inProcess_[id].store(true);
+                    auto task = tasks_[id][curTask];
+                    curTask_[id].compare_exchange_strong(curTask, curTask + 1);
+                    std::invoke(task);
+                    inProcess_[id].store(false);
+                    //std::cout << "do " << curTask.field << std::endl;
+                } else {
+                    inProcess_[id].store(false);
 //                hasWork_.store(false);
 //                hasWork_.wait(false);
+                }
             }
-
         }
     }
 } // my

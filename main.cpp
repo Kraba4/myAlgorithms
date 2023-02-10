@@ -22,12 +22,13 @@ int main(){
     using namespace std::chrono_literals;
     const unsigned int SEED =  time(NULL);
     const unsigned int RANGE = 5'000'000'000;
-#define initTest {{5000, 200}, {500'000, 50'000}, {50'000'000,10'000'000}}
-//    std::cout << "Seq: \n";
-//    utils::testFindAndPrint(stdFindSeq, initTest, SEED);
-//    std::cout << "Par: \n";
+    //{50'000'000,10'000'000}
+#define initTest {{5000, 200}, {500'000, 50'000},{50'000'000,50'000}}
+    std::cout << "Seq: \n";
+    utils::testFindAndPrint(stdFindSeq, initTest, SEED);
+    std::cout << "Par: \n";
 //    std::this_thread::sleep_for(4000ms);
-//    utils::testFindAndPrint(stdFindPar, initTest, SEED);
+    utils::testFindAndPrint(stdFindPar, initTest, SEED);
 
 
     std::cout << "My: \n";
