@@ -15,9 +15,8 @@ namespace my {
 
         std::vector<Iterator> results;
         results.reserve(chunks);
-        auto statusResults = new std::atomic<int>[chunks];
-
-
+//        auto statusResults = new std::atomic<int>[chunks];
+        std::deque<std::atomic<int>> statusResults(chunks);
         Iterator result = std::find(first, first + chunkSize, value);
         if(result != first + chunkSize){
             return result;
@@ -26,7 +25,8 @@ namespace my {
         int done = 1;
         for(int i=1;i<chunks; ++i){
             results.emplace_back(last);
-            statusResults[i].store(0);
+//            statusResults[i].store(0);
+
             pool.doAsync([first, i, last, value, chunkSize, &promise = results[i],
                           &status = statusResults[i]]() mutable {
 
