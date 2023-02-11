@@ -32,10 +32,10 @@ namespace my {
         size_t getNumberOfThreads();
         void clear(){
 //            std::cout << "start clear\n";
-            pause_.store(true, std::memory_order_relaxed);
+            pause_.store(true);
             for(int i=0;i<threads_.size();++i){
                 auto lastTaskLoad = lastTask_[i].field.load();
-                curTask_[i].field.store(lastTaskLoad, std::memory_order_release);
+                curTask_[i].field.store(lastTaskLoad);
                 lastTaskCached_[i].field = lastTaskLoad;
             }
             while(inProcess_[0].field.load() || inProcess_[1].field.load() ||
@@ -46,19 +46,19 @@ namespace my {
         }
         void flush(){
             for(int i=0;i<threads_.size();++i){
-                lastTask_[i].field.store(lastTaskCached_[i].field, std::memory_order_release);
+                lastTask_[i].field.store(lastTaskCached_[i].field);
             }
         }
         void doAsync(std::function<void()> func){
-            if(pause_.load(std::memory_order_relaxed)) {
-                pause_.store(false, std::memory_order_relaxed);
+            if(pause_.load()) {
+                pause_.store(false);
 //                pause_.notify_all();
 //                std::cout << "begin\n";
             }
             tasks_[nextThread_][lastTaskCached_[nextThread_].field] = std::move(func);
             ++lastTaskCached_[nextThread_].field;
-            if(curTask_[nextThread_].field.load(std::memory_order_relaxed) == lastTask_[nextThread_].field.load(std::memory_order_relaxed)) {
-                lastTask_[nextThread_].field.store(lastTaskCached_[nextThread_].field, std::memory_order_release);
+            if(curTask_[nextThread_].field.load() == lastTask_[nextThread_].field.load()) {
+                lastTask_[nextThread_].field.store(lastTaskCached_[nextThread_].field);
             }
             ++nextThread_;
             nextThread_ = nextThread_ % 4;

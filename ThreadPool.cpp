@@ -40,14 +40,14 @@ namespace my {
 
     void ThreadPool::work(int id){
         while(isRunning_) {
-            if(!pause_.load(std::memory_order_relaxed)) {
-                int lastTask = lastTask_[id].field.load(std::memory_order_acquire);
-                auto curTask = curTask_[id].field.load(std::memory_order_acquire);
+            if(!pause_.load()) {
+                int lastTask = lastTask_[id].field.load();
+                auto curTask = curTask_[id].field.load();
 
                 if (curTask != lastTask) {
                     inProcess_[id].field.store(true);
                     auto task = tasks_[id][curTask];
-                    curTask_[id].field.compare_exchange_strong(curTask, curTask + 1, std::memory_order_acq_rel);
+                    curTask_[id].field.compare_exchange_strong(curTask, curTask + 1);
                     std::invoke(task);
                     inProcess_[id].field.store(false);
                     //std::cout << "do " << curTask.field << std::endl;
