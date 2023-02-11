@@ -12,10 +12,11 @@ void utils::testFindAndPrint(std::function<
         int valueToFind = arr[test.indexToBeFound];
 
         decltype(arr.begin()) result;
-        double time = utils::runAndCheckTime(numberOfRuns, [&](){
+        auto [time, max_result, min_result] = utils::runAndCheckTime(numberOfRuns, [&](){
             result = find(arr.begin(), arr.end(), valueToFind);
         });
-        std::cout << "size = "<< std::setw(9) << test.size << " time: " << time / BILLION << " s |***| ";
+        std::cout << "size = "<< std::setw(9) << test.size << " time: " << time / BILLION << " s " << " ("
+        << min_result/BILLION << " - " << max_result/BILLION << " s) |***| ";
         std::cout << "index = "<< result - arr.begin() << " (" << *result << "==" << valueToFind << ") \n";
     }
     std::cout << "\n";

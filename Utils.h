@@ -24,16 +24,23 @@ namespace utils {
 
 
     template<typename Function, typename ...Args>
-    double runAndCheckTime(int numberOfRuns, const Function &fn) {
+    std::tuple<double, double, double> runAndCheckTime(int numberOfRuns, const Function &fn) {
         std::vector<long long> results;
+        long long max_result = 0;
+        long long min_result = 999999999999;
         for (int i = 0; i < numberOfRuns; i++) {
             auto start = std::chrono::high_resolution_clock::now();
             fn();
             auto end = std::chrono::high_resolution_clock::now();
+
             results.push_back((end - start).count());
+            max_result = std::max(max_result, (end - start).count());
+            min_result = std::min(min_result, (end - start).count());
 //            std::cout << results.back() / 1'000'000'000. << " s " << std::endl;
         }
-        return std::reduce(results.begin(), results.end()) / results.size();
+        return std::make_tuple(std::reduce(results.begin(), results.end()) / results.size(),
+                               max_result,
+                               min_result);
     }
 }
 #endif //MYALGORITHMS_UTILS_H
