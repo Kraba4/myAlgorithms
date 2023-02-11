@@ -27,31 +27,29 @@ namespace my {
             results.emplace_back(last);
 //            statusResults[i].store(0);
 
-            pool.doAsync([first, i, last, value, chunkSize, &promise = results[i],
+            Iterator right = last;
+            if(( last - (first + i*chunkSize) )>= chunkSize){
+                right = first + ((i + 1) * chunkSize);
+            }
+            Iterator left = first + (i * chunkSize);
+            pool.doAsync([left = std::move(left), right = std::move(right), &value, &promise = results[i],
                           &status = statusResults[i]]() mutable {
 
-                Iterator right = last;
-                if(( last - (first + i*chunkSize) )>= chunkSize){
-                    right = first + ((i + 1) * chunkSize);
-                }
-                Iterator result = std::find(first + (i * chunkSize), right, value);
+                Iterator result = std::find(left, right, value);
+                promise = result;
                 if (result == right) {
-                    promise = last;
                     status.store(1);
                 }
                 else {
-                    promise = result;
                     status.store(2);
                 }
             });
             if(done <= i){
                 int status = statusResults[done].load();
                 if(status == 2){
-
                     pool.clear();
                     return results[done];
                 }else if(status == 1){
-
                     ++done;
                 }
             }

@@ -49,7 +49,7 @@ namespace my {
                 lastTask_[i].field.store(lastTaskCached_[i].field);
             }
         }
-        void doAsync(std::function<void()> func){
+        void doAsync(std::function<void()>&& func){
             if(pause_.load()) {
                 pause_.store(false);
 //                pause_.notify_all();
