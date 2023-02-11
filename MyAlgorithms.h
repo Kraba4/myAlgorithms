@@ -10,16 +10,18 @@
 namespace my {
     template<std::random_access_iterator Iterator>
     Iterator find(my::ThreadPool& pool, Iterator first, Iterator last, const std::iter_value_t<Iterator>& value){
-        const int chunks = std::max(static_cast<int>((last-first) / ((64/sizeof(value)) * 1500)), 1);
-        int chunkSize = (last - first) / chunks;
+        const int chunkSize = (64/sizeof(value)) * 1500;
+        const int chunks = static_cast<int>((last-first) / chunkSize) +
+                (static_cast<int>(last-first)%chunkSize != 0 ? 1:0);
 
         std::vector<Iterator> results;
         results.reserve(chunks);
 //        auto statusResults = new std::atomic<int>[chunks];
         std::deque<std::atomic<int>> statusResults(chunks);
-        Iterator result = std::find(first, first + chunkSize, value);
-        if(result != first + chunkSize){
-            return result;
+
+        results.emplace_back(std::find(first, first + chunkSize, value));
+        if(results[0] != (first + chunkSize)){
+            return results[0];
         }
 
         int done = 1;
@@ -28,7 +30,7 @@ namespace my {
 //            statusResults[i].store(0);
 
             Iterator right = last;
-            if(( last - (first + i*chunkSize) )>= chunkSize){
+            if(static_cast<int>( last - (first + i*chunkSize) )>= chunkSize){
                 right = first + ((i + 1) * chunkSize);
             }
             Iterator left = first + (i * chunkSize);
@@ -64,10 +66,8 @@ namespace my {
 
             if(status == 2) {
                 minI = results[i];
-                if (minI != last) {
-                    pool.clear();
-                    return minI;
-                }
+                pool.clear();
+                return minI;
             }
         }
         pool.clear();
