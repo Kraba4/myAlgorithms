@@ -4,7 +4,7 @@
 #include "Utils.h"
 void utils::testFindAndPrint(std::function<
         std::vector<unsigned>::iterator(std::vector<unsigned>::iterator,std::vector<unsigned>::iterator, unsigned )> find,
-                      std::initializer_list<FindTest> tests, unsigned seed, unsigned numberOfRuns, unsigned range){
+                      std::initializer_list<FindTest> tests, unsigned seed, unsigned numberOfRuns, long long range){
     std::cout << std::fixed << std::setprecision(9) << std::left;
     constexpr int BILLION = 1'000'000'000;
     for(FindTest test : tests) {
