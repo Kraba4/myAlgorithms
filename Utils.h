@@ -26,8 +26,8 @@ namespace utils {
     template<typename Function, typename ...Args>
     std::tuple<double, double, double> runAndCheckTime(int numberOfRuns, const Function &fn) {
         std::vector<long long> results;
-        long  max_result = 0;
-        long  min_result = 999999999999;
+        long long  max_result = 0;
+        long long min_result = 999999999999;
         for (int i = 0; i < numberOfRuns; i++) {
             auto start = std::chrono::high_resolution_clock::now();
             fn();

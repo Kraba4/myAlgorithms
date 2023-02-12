@@ -27,7 +27,7 @@ int main(){
     const unsigned int SEED =  time(NULL);
     const unsigned int RANGE = 5'000'000'000;
 //#define initTest {{5000, SEED%5000}, {500'000, SEED%500'000},{50'000'000,SEED%50'000'000}}
-#define initTest {{5000, 4'900}, {500'000, 499'000},{50'000'000,49'000'000}}
+#define initTest {{5000, 4'900}, {500'000, 499'000},{50'000'000,1'000'000}}
 //    std::cout << "Seq: \n";
 //    utils::testFindAndPrint(stdFindSeq, initTest, SEED);
     std::cout << "Par: \n";
