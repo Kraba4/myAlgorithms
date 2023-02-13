@@ -46,28 +46,21 @@ namespace my {
     Iterator findOld(my::ThreadPool& pool, Iterator first, Iterator last, const std::iter_value_t<Iterator>& value){
         const int chunkSize = (64/sizeof(value)) * 4000;
         const int chunks = static_cast<int>((last-first) / chunkSize) +
-                (static_cast<int>(last-first)%chunkSize != 0 ? 1:0);
+                           (static_cast<int>(last-first)%chunkSize != 0 ? 1:0);
 
-//        std::vector<Iterator> results;
-//        results.reserve(chunks);
-//        auto statusResults = new std::atomic<int>[chunks];
-//        std::deque<std::atomic<int>> statusResults(chunks);
-        std::vector<std::future<Iterator>> results;
+        std::vector<Iterator> results;
         results.reserve(chunks);
-        results.emplace_back();
-        std::vector<std::promise<Iterator>> promises;
-        promises.reserve(chunks);
-        promises.emplace_back();
-//        results.emplace_back(std::find(first, first + chunkSize, value));
-        Iterator res = std::find(first, first + chunkSize, value);
-        if(res != (first + chunkSize)){
-            return res;
+//        auto statusResults = new std::atomic<int>[chunks];
+        std::deque<std::atomic<int>> statusResults(chunks);
+
+        results.emplace_back(std::find(first, first + chunkSize, value));
+        if(results[0] != (first + chunkSize)){
+            return results[0];
         }
 
         int done = 1;
         for(int i=1;i<chunks; ++i){
-            promises.emplace_back();
-            results.push_back(promises[i].get_future());
+            results.emplace_back(last);
 //            statusResults[i].store(0);
 
             Iterator right = last;
@@ -75,28 +68,25 @@ namespace my {
                 right = first + ((i + 1) * chunkSize);
             }
             Iterator left = first + (i * chunkSize);
-            pool.doAsync([left = std::move(left), right = std::move(right), &value, &promise = promises[i], last]() mutable {
+            pool.doAsync([left = std::move(left), right = std::move(right), &value, &promise = results[i],
+                                 &status = statusResults[i]]() mutable {
 
                 Iterator result = std::find(left, right, value);
-//                promise = result;
+                promise = result;
                 if (result == right) {
-                    promise.set_value(last);
+                    status.store(1);
                 }
                 else {
-                    promise.set_value(result);
+                    status.store(2);
                 }
             });
             if(done <= i){
-//                int status = statusResults[done].load();
-                if(results[done].valid()){
-//                    std::cout << "exit\n";
-                    Iterator result = results[done].get();
-                    if(result != last) {
-                        pool.clear();
-                        return result;
-                    }else{
-                        ++done;
-                    }
+                int status = statusResults[done].load();
+                if(status == 2){
+                    pool.clear();
+                    return results[done];
+                }else if(status == 1){
+                    ++done;
                 }
             }
         }
@@ -104,14 +94,12 @@ namespace my {
         Iterator minI = last;
 
         for(int i = done; i<results.size(); ++i){
-//            int status = statusResults[i].load();
-            while(!results[i].valid()) {
-//                std::this_thread::yield();
-//                status = statusResults[i].load();
-            }
-            Iterator result = results[done].get();
-            if(result != last) {
-                minI = result;
+            int status = statusResults[i].load();
+            while(status==0)
+                status = statusResults[i].load();
+
+            if(status == 2) {
+                minI = results[i];
                 pool.clear();
                 return minI;
             }
