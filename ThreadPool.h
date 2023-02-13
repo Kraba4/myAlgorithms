@@ -51,7 +51,10 @@ namespace my {
         }
         void flush(){
             for(int i=0;i<threads_.size();++i){
-                lastTask_[i].field.store(lastTaskCached_[i].field);
+                int old = lastTask_[i].field.load();
+                if(old < lastTaskCached_[i].field) {
+                    lastTask_[i].field.compare_exchange_weak(old, lastTaskCached_[i].field);
+                }
             }
         }
         void doAsync(std::function<void()>&& func){
@@ -64,9 +67,11 @@ namespace my {
             ++nTasks;
             tasks_[nextThread_][lastTaskCached_[nextThread_].field] = std::move(func);
             ++lastTaskCached_[nextThread_].field;
-            if(curTask_[nextThread_].field.load() == lastTask_[nextThread_].field.load()) {
-                lastTask_[nextThread_].field.store(lastTaskCached_[nextThread_].field);
-            }
+            ++lastTask_[nextThread_].field;
+//            if(curTask_[nextThread_].field.load() == lastTask_[nextThread_].field.load()) {
+//                int old = lastTask_[nextThread_].field.load();
+//                lastTask_[nextThread_].field.compare_exchange_weak(old, lastTaskCached_[nextThread_].field);
+//            }
             ++nextThread_;
             nextThread_ = nextThread_ % 4;
 
