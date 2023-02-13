@@ -83,30 +83,39 @@ namespace my {
         }
         return minI;
     }
-
     template<std::random_access_iterator Iterator, typename Comp = std::less<> >
-    void sort(Iterator first, Iterator last, Comp comp= Comp()){
-        constexpr int N_THREADS = 4;
-        const int length = (last-first)/N_THREADS;
-        std::vector<std::future<Iterator>> results(N_THREADS);
-        for(int i=0;i<N_THREADS;++i){
-            Iterator begin = first[i * length];
-            Iterator end = last;
-            if(i!=N_THREADS-1){
-                end = first[(i+1)*length];
+    Iterator partition(Iterator first, Iterator last, std::iter_value_t<Iterator> pivot, Comp comp = Comp()){
+        while(first <= last){
+            while(comp(*first, pivot)){
+                ++first;
             }
-            results[i] = std::async(std::launch::async, [begin = std::move(begin), end=std::move(end)](){
-                std::sort(begin, end);
-            });
+            while(comp(pivot, *last)){
+                --last;
+            }
+            if(first >= last){
+                break;
+            }
+            std::swap(*first, *last);
+            ++first;
+            --last;
         }
-        std::vector<Iterator> begins(N_THREADS);
-        for(int i=0;i<N_THREADS;++i){
-            begins[i] = results[i].get();
-        }
-        Iterator* next = &begins[0];
-//        for(int )
-
+       return last;
     }
+    template<std::random_access_iterator Iterator, typename Comp = std::less<> >
+    void quick_sort(Iterator first, Iterator last, Comp comp = Comp()){
+        if(last == first){
+            return;
+        }
+        Iterator center = first + (last - first)/2;
+        Iterator pivot = partition(first, last, *center,  comp);
+        quick_sort(first, pivot);
+        quick_sort(pivot+1, last);
+    }
+    template<std::random_access_iterator Iterator, typename Comp = std::less<> >
+    void sort(Iterator begin, Iterator end, Comp comp= Comp()){
+        quick_sort(begin, end-1, comp);
+    }
+
 }
 
 
