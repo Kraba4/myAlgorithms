@@ -52,7 +52,7 @@ namespace my {
                     std::invoke(task);
                     --nTasks;
                     inProcess_[id].field.store(false);
-                    //std::cout << "do " << curTask.field << std::endl;
+//                    std::cout << "i'm " << id << "do " << curTask << std::endl;
                 } else {
                     inProcess_[id].field.store(false);
 //                hasWork_.store(false);

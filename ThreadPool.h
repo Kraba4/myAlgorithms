@@ -55,6 +55,7 @@ namespace my {
             }
         }
         void doAsync(std::function<void()>&& func){
+            std::lock_guard lock(mutexForDoAsync_);
             if(pause_.load()) {
                 pause_.store(false);
 //                pause_.notify_all();
@@ -76,6 +77,7 @@ namespace my {
         void initializeThreads(size_t numberOfThreads);
         void work(int id);
 
+        std::mutex mutexForDoAsync_;
         std::vector<std::thread> threads_;
         std::atomic<bool> isRunning_;
         std::atomic<bool> hasWork_;
@@ -86,7 +88,7 @@ namespace my {
         AlignedField<std::atomic<int>, 64> lastTask_[4];
         AlignedField<int, 64> lastTaskCached_[4] = {0,0,0,0};
         AlignedField<std::atomic<int>,64> inProcess_[4];
-        alignas(64) my::ModuleVector<std::function<void()>, 256> tasks_[4];
+        alignas(64) my::ModuleVector<std::function<void()>, 4096> tasks_[4];
     };
 
 } // my

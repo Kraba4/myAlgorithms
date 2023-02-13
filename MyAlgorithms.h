@@ -7,7 +7,9 @@
 
 #include "ThreadPool.h"
 
+
 namespace my {
+    using namespace std::chrono_literals;
     template<std::random_access_iterator Iterator>
     Iterator find(my::ThreadPool& pool, Iterator first, Iterator last, const std::iter_value_t<Iterator>& value){
         const int chunkSize = (64/sizeof(value)) * 4000;
@@ -112,8 +114,60 @@ namespace my {
         quick_sort(pivot+1, last);
     }
     template<std::random_access_iterator Iterator, typename Comp = std::less<> >
-    void sort(Iterator begin, Iterator end, Comp comp= Comp()){
+    void sort_seq(Iterator begin, Iterator end, Comp comp= Comp()){
         quick_sort(begin, end-1, comp);
+    }
+
+    template<std::random_access_iterator Iterator, typename Comp = std::less<> >
+    void quick_sort_par(ThreadPool& pool, std::atomic<int>& elementsSorted, Iterator first, Iterator last, Comp comp = Comp()){
+
+        Iterator center = first + (last - first)/2;
+        Iterator pivot = partition(first, last, *center,  comp);
+        if(pivot - first < 1<<10){
+            quick_sort(first, pivot);
+            int sortedNow = elementsSorted.load();
+            while(!elementsSorted.compare_exchange_weak(sortedNow, sortedNow + (pivot - first) + 1)){
+            }
+        }else {
+                pool.doAsync([&pool, first, pivot, comp, &elementsSorted]() {
+                    quick_sort_par(pool, elementsSorted, first, pivot, comp);
+                });
+        }
+
+        pool.flush();
+        if(last - (pivot + 1) < 1<<10) {
+            quick_sort(pivot+1, last);
+            int sortedNow = elementsSorted.load();
+            while(!elementsSorted.compare_exchange_weak(sortedNow, sortedNow + (last - (pivot + 1)) + 1)){
+            }
+
+        }else {
+            pool.doAsync([&pool, last, pivot, comp, &elementsSorted]() {
+                quick_sort_par(pool,elementsSorted, pivot + 1, last, comp);
+            });
+        }
+
+        pool.flush();
+
+    }
+    template<std::random_access_iterator Iterator, typename Comp = std::less<> >
+    void sort(ThreadPool& pool, Iterator begin, Iterator end, Comp comp= Comp()){
+        std::atomic<int> elementsSorted = 0;
+        quick_sort_par(pool, elementsSorted, begin, end-1, comp);
+        while (elementsSorted.load() != (end - begin)){
+//            std::cout << elementsSorted.load() << std::endl;
+        }
+    }
+
+
+    template<std::random_access_iterator Iterator, typename Comp = std::less<> >
+    void sort(Iterator begin, Iterator end, Comp comp= Comp()){
+        std::atomic<int> elementsSorted = 0;
+        auto threadPool = std::make_unique<ThreadPool>(4);
+        quick_sort_par(*threadPool, elementsSorted, begin, end-1, comp);
+        while (elementsSorted.load() != (end - begin)){
+//            std::cout << elementsSorted.load() << std::endl;
+        }
     }
 
 }
