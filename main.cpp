@@ -27,7 +27,7 @@ int main(){
     const unsigned int SEED =  time(NULL);
 //    const unsigned int RANGE = 5'000'000'000;
 #define initTest {{5000, SEED%5000}, {500'000, SEED%500'000},{50'000'000,SEED%50'000'000}}
-//#define initTest {{5000, 4'900}, {500'000, 499'000},{50'000'000,49'000'000}}
+//#define initTest {{5000, 4'900}, {500'000, 499'000},{50'000'000,1'000'000}}
     std::cout << "Seq: \n";
     utils::testFindAndPrint(stdFindSeq, initTest, SEED);
     std::cout << "Par: \n";
@@ -40,11 +40,9 @@ int main(){
                           std::vector<unsigned>::iterator end, unsigned val){
         return my::find(pool, begin, end, val);
     };
+    int a[] = {1,2,3};
+//   std::sort(std::execution::par, a, a+3);
 
-    auto myFindOld = [&pool](std::vector<unsigned>::iterator begin,
-                          std::vector<unsigned>::iterator end, unsigned val){
-        return my::findOld(pool, begin, end, val);
-    };
    utils::testFindAndPrint(myFind, initTest , SEED);
 
     std::cout << "My std::async : \n";

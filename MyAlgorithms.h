@@ -42,72 +42,6 @@ namespace my {
         pool.waitAll();
         return *std::min_element(results.begin(), results.end());
     }
-    template<std::random_access_iterator Iterator>
-    Iterator findOld(my::ThreadPool& pool, Iterator first, Iterator last, const std::iter_value_t<Iterator>& value){
-        const int chunkSize = (64/sizeof(value)) * 4000;
-        const int chunks = static_cast<int>((last-first) / chunkSize) +
-                           (static_cast<int>(last-first)%chunkSize != 0 ? 1:0);
-
-        std::vector<Iterator> results;
-        results.reserve(chunks);
-//        auto statusResults = new std::atomic<int>[chunks];
-        std::deque<std::atomic<int>> statusResults(chunks);
-
-        results.emplace_back(std::find(first, first + chunkSize, value));
-        if(results[0] != (first + chunkSize)){
-            return results[0];
-        }
-
-        int done = 1;
-        for(int i=1;i<chunks; ++i){
-            results.emplace_back(last);
-//            statusResults[i].store(0);
-
-            Iterator right = last;
-            if(static_cast<int>( last - (first + i*chunkSize) )>= chunkSize){
-                right = first + ((i + 1) * chunkSize);
-            }
-            Iterator left = first + (i * chunkSize);
-            pool.doAsync([left = std::move(left), right = std::move(right), &value, &promise = results[i],
-                                 &status = statusResults[i]]() mutable {
-
-                Iterator result = std::find(left, right, value);
-                promise = result;
-                if (result == right) {
-                    status.store(1);
-                }
-                else {
-                    status.store(2);
-                }
-            });
-            if(done <= i){
-                int status = statusResults[done].load();
-                if(status == 2){
-                    pool.clear();
-                    return results[done];
-                }else if(status == 1){
-                    ++done;
-                }
-            }
-        }
-        pool.flush();
-        Iterator minI = last;
-
-        for(int i = done; i<results.size(); ++i){
-            int status = statusResults[i].load();
-            while(status==0)
-                status = statusResults[i].load();
-
-            if(status == 2) {
-                minI = results[i];
-                pool.clear();
-                return minI;
-            }
-        }
-        pool.clear();
-        return minI;
-    }
-
 
     template<std::random_access_iterator Iterator>
     Iterator find(Iterator first, Iterator last, const std::iter_value_t<Iterator>& value){
@@ -148,6 +82,30 @@ namespace my {
             minI = std::min(result, minI);
         }
         return minI;
+    }
+
+    template<std::random_access_iterator Iterator, typename Comp = std::less<> >
+    void sort(Iterator first, Iterator last, Comp comp= Comp()){
+        constexpr int N_THREADS = 4;
+        const int length = (last-first)/N_THREADS;
+        std::vector<std::future<Iterator>> results(N_THREADS);
+        for(int i=0;i<N_THREADS;++i){
+            Iterator begin = first[i * length];
+            Iterator end = last;
+            if(i!=N_THREADS-1){
+                end = first[(i+1)*length];
+            }
+            results[i] = std::async(std::launch::async, [begin = std::move(begin), end=std::move(end)](){
+                std::sort(begin, end);
+            });
+        }
+        std::vector<Iterator> begins(N_THREADS);
+        for(int i=0;i<N_THREADS;++i){
+            begins[i] = results[i].get();
+        }
+        Iterator* next = &begins[0];
+//        for(int )
+
     }
 }
 
