@@ -111,33 +111,43 @@ namespace my {
 
     template<std::random_access_iterator Iterator>
     Iterator find(Iterator first, Iterator last, const std::iter_value_t<Iterator>& value){
-        const int chunks = 4;
-        int chunkSize = (last - first) / chunks;
 
-        std::vector<std::future<Iterator>> results;
-        results.reserve(chunks);
-        for(int i=0;i<chunks; ++i){
-            results.push_back(std::async(std::launch::async, [first, i, last, value, chunkSize]() mutable {
+        const int chunkSize = (64/sizeof(value)) * 4000;
+        const int chunks = static_cast<int>((last-first) / chunkSize) +
+                           (static_cast<int>(last-first)%chunkSize != 0 ? 1:0);
+        constexpr int N_THREADS = 4;
+        std::vector<std::future<Iterator>> results(N_THREADS);
+        std::atomic<int> chunk = 0;
+        for(int i=0;i<N_THREADS;++i){
+            results[i] = std::async(std::launch::async, [&first, &last, &chunk, chunks, chunkSize, &value](){
+                while(true){
+                    int myChunk = chunk.load();
+                    if(myChunk == chunks){
+                        return last;
+                    }
+                    if(!chunk.compare_exchange_weak(myChunk, myChunk+1)){
+                        continue;
+                    }
+                    Iterator left = first + myChunk*chunkSize;
+                    Iterator right = last;
+                    if(last - left > chunkSize){
+                        right = left + chunkSize;
+                    }
+                    Iterator myResult = std::find(left, right, value);
+                    if(myResult != right){
+                        chunk.store(chunks);
+                        return myResult;
+                    }
 
-                Iterator right = last;
-                if(( last - (first + i*chunkSize) )>= chunkSize){
-                    right = first + ((i + 1) * chunkSize);
                 }
-                Iterator result = std::find(first + (i * chunkSize), right, value);
-                if (result == right) {
-                    return last;
-                }
-                else {
-                    return result;
-                }
-            }));
+            });
         }
         Iterator minI = last;
-        for(int i=0; i<chunks; ++i){
-            minI = std::min(minI, results[i].get());
+        for(int i=0;i<N_THREADS;++i){
+            Iterator result = results[i].get();
+            minI = std::min(result, minI);
         }
         return minI;
-
     }
 }
 

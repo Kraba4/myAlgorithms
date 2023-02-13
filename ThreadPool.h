@@ -86,7 +86,7 @@ namespace my {
         AlignedField<std::atomic<int>, 64> lastTask_[4];
         AlignedField<int, 64> lastTaskCached_[4] = {0,0,0,0};
         AlignedField<std::atomic<int>,64> inProcess_[4];
-        alignas(64) my::ModuleVector<std::function<void()>, 4096> tasks_[4];
+        alignas(64) my::ModuleVector<std::function<void()>, 256> tasks_[4];
     };
 
 } // my
