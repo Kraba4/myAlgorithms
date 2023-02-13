@@ -10,7 +10,41 @@
 namespace my {
     template<std::random_access_iterator Iterator>
     Iterator find(my::ThreadPool& pool, Iterator first, Iterator last, const std::iter_value_t<Iterator>& value){
-        const int chunkSize = (64/sizeof(value)) * 1500;
+        const int chunkSize = (64/sizeof(value)) * 4000;
+        const int chunks = static_cast<int>((last-first) / chunkSize) +
+                           (static_cast<int>(last-first)%chunkSize != 0 ? 1:0);
+        std::vector<Iterator> results(pool.getNumberOfThreads(), last);
+        std::atomic<int> chunk = 0;
+        for(int i=0;i<pool.getNumberOfThreads();++i){
+            pool.doAsync([&first, &last, &chunk, chunks, &result = results[i], chunkSize, &value](){
+                while(true){
+                    int myChunk = chunk.load();
+                    if(myChunk == chunks){
+                        return ;
+                    }
+                    if(!chunk.compare_exchange_weak(myChunk, myChunk+1)){
+                        continue;
+                    }
+                    Iterator left = first + myChunk*chunkSize;
+                    Iterator right = last;
+                    if(last - left > chunkSize){
+                        right = left + chunkSize;
+                    }
+                    Iterator myResult = std::find(left, right, value);
+                    if(myResult != right){
+                        result = myResult;
+                        chunk.store(chunks);
+                    }
+
+                }
+            });
+        }
+        pool.waitAll();
+        return *std::min_element(results.begin(), results.end());
+    }
+    template<std::random_access_iterator Iterator>
+    Iterator findOld(my::ThreadPool& pool, Iterator first, Iterator last, const std::iter_value_t<Iterator>& value){
+        const int chunkSize = (64/sizeof(value)) * 4000;
         const int chunks = static_cast<int>((last-first) / chunkSize) +
                 (static_cast<int>(last-first)%chunkSize != 0 ? 1:0);
 

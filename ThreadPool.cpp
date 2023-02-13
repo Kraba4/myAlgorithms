@@ -45,10 +45,12 @@ namespace my {
                 auto curTask = curTask_[id].field.load();
 
                 if (curTask != lastTask) {
+//                    std::cout << "i'm " << id << std::endl;
                     inProcess_[id].field.store(true);
                     auto task = tasks_[id][curTask];
                     curTask_[id].field.compare_exchange_strong(curTask, curTask + 1);
                     std::invoke(task);
+                    --nTasks;
                     inProcess_[id].field.store(false);
                     //std::cout << "do " << curTask.field << std::endl;
                 } else {

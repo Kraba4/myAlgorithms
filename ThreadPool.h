@@ -30,6 +30,11 @@ namespace my {
         ~ThreadPool();
 
         size_t getNumberOfThreads();
+        void waitAll(){
+        while(nTasks.load() != 0){
+                ;
+            }
+        }
         void clear(){
 //            std::cout << "start clear\n";
             pause_.store(true);
@@ -55,6 +60,7 @@ namespace my {
 //                pause_.notify_all();
 //                std::cout << "begin\n";
             }
+            ++nTasks;
             tasks_[nextThread_][lastTaskCached_[nextThread_].field] = std::move(func);
             ++lastTaskCached_[nextThread_].field;
             if(curTask_[nextThread_].field.load() == lastTask_[nextThread_].field.load()) {
@@ -74,12 +80,13 @@ namespace my {
         std::atomic<bool> isRunning_;
         std::atomic<bool> hasWork_;
         int nextThread_ = 0;
+        std::atomic<int> nTasks;
         std::atomic<bool> pause_ = false;
         AlignedField<std::atomic<int>, 64> curTask_[4];
         AlignedField<std::atomic<int>, 64> lastTask_[4];
         AlignedField<int, 64> lastTaskCached_[4] = {0,0,0,0};
         AlignedField<std::atomic<int>,64> inProcess_[4];
-        alignas(64) my::ModuleVector<std::function<void()>, 2048> tasks_[4];
+        alignas(64) my::ModuleVector<std::function<void()>, 4096> tasks_[4];
     };
 
 } // my
