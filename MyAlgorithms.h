@@ -134,7 +134,7 @@ namespace my {
                 });
         }
 
-        pool.flush();
+//        pool.flush();
         if(last - (pivot + 1) < 1<<10) {
             quick_sort(pivot+1, last);
             int sortedNow = elementsSorted.load();
@@ -147,7 +147,7 @@ namespace my {
             });
         }
 
-        pool.flush();
+//        pool.flush();
 
     }
     template<std::random_access_iterator Iterator, typename Comp = std::less<> >
