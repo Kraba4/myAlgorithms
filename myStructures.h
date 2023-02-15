@@ -32,7 +32,7 @@ namespace my{
 
 
         Node* root = nullptr;
-
+        int size_ = 0;
         void rotateLeft(Node*& current){
             Node* newCurrent = current->right;
             current->right = newCurrent->left;
@@ -94,6 +94,7 @@ namespace my{
         bool insert(Node*& current, T&& value){
             if(current == nullptr){
                 current = new Node(std::move(value));
+                ++size_;
                 return true; //needBalance
             }
             if(value == current->value){
@@ -194,6 +195,7 @@ namespace my{
             if(value == current->value){
                 eraseNode(current);
                 balance(current);
+                --size_;
                 return true;
             }else if(value < current->value){
                 needBalance = erase(current->left, value);
@@ -287,6 +289,9 @@ namespace my{
         }
         void print(){
             print(root, 0, '=');
+        }
+        int size(){
+            return size;
         }
     };
 }
