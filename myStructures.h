@@ -6,6 +6,10 @@
 #define MYALGORITHMS_MYSTRUCTURES_H
 #include <algorithm>
 #include <list>
+#include <vector>
+#include <queue>
+#include <cstdlib>
+#include <string>
 
 namespace my{
     template<typename T>
@@ -292,6 +296,30 @@ namespace my{
         }
         int size(){
             return size;
+        }
+        std::vector<std::tuple<std::string, int, int>> collectNodes(int& max_dep){
+            max_dep = 0;
+
+            std::vector<std::tuple<std::string, int, int>> nodes;
+            nodes.push_back(std::make_tuple("[ ]", 0, 0));
+            std::queue<std::tuple<Node*, int, int>> que;
+            que.push(std::make_tuple(root, 0, 1));
+            while(!que.empty()){
+                auto [node, dep, i] = que.front();
+                que.pop();
+                max_dep = std::max(max_dep, dep);
+                if(node== nullptr){
+                    nodes.push_back(std::make_tuple("     ", dep, i));
+                }else {
+                    nodes.push_back(std::make_tuple("[" + std::to_string(node->value)+", ("
+                    + std::to_string(node->calcDiff())  +")]", dep, i));
+                }
+                if(node != nullptr) {
+                    que.push(std::make_tuple(node->left, dep + 1, i*2));
+                    que.push(std::make_tuple(node->right, dep + 1, i*2 +1));
+                }
+            }
+            return std::move(nodes);
         }
     };
 }

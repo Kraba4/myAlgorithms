@@ -8,3 +8,5 @@ add_executable(find_test ThreadPool.cpp ThreadPool.h find_test.cpp ModuleVector.
 add_executable(sort_test sort_test.cpp Utils.h Utils.cpp ThreadPool.cpp ThreadPool.h)
 add_executable(tree_test tree_test.cpp myStructures.h Utils.h Utils.cpp)
 add_executable(tree_test_zaxar tree_test_zaxar.cpp)
+add_executable(avl_test avl_test.cpp myStructures.h Utils.cpp Utils.h)
+add_executable(fib fib.cpp)
